@@ -6,4 +6,6 @@ CREATE DOMAIN monto_financiero AS NUMERIC(15, 2)
 CREATE DOMAIN texto_obligatorio AS VARCHAR(100)
     CHECK (VALUE <> '' AND LENGTH(TRIM(VALUE)) > 0);
 
--- asi con el dominio de monto financiero se puede mejorar la arquitectura en la tabla cuentas y transacciones
+--La columna saldo_actual dentro de la tabla Cuentas.
+--La columna limite_credito dentro de la tabla Cuentas.
+--La columna monto_tx dentro de la tabla Transacciones.
