@@ -1,56 +1,18 @@
-CREATE OR REPLACE VIEW core.vw_reporte_actividad_cuentas AS
-
--- 1. CTE: Agregación de eventos e importes positivos (volumen bruto) por cuenta
-WITH tx_resumen AS (
-    SELECT 
-        account_id,
-        COUNT(*) AS recuento,
-        SUM(amount) AS volumen_bruto
-    FROM core.transactions[cite: 1]
-    GROUP BY account_id
-),
-
--- 2. CTE: Cuentas activas con LEFT JOIN, sustituyendo ausentes por cero y preservando el grano (account_id)
-cuentas_activas AS (
-    SELECT 
-        a.account_id,
-        a.customer_id,
-        a.account_number,
-        a.currency,
-        COALESCE(t.recuento, 0) AS recuento,
-        COALESCE(t.volumen_bruto, 0) AS volumen_bruto
-    FROM core.accounts a[cite: 1]
-    LEFT JOIN tx_resumen t ON a.account_id = t.account_id
-    WHERE a.is_active = true[cite: 1]
+WITH movement AS (
+ SELECT account_id, COUNT(*) AS tx_count, SUM(amount) AS gross_volume
+ FROM core.transactions GROUP BY account_id
+), account_metrics AS (
+ SELECT a.account_id, a.account_number, a.currency, a.customer_id,
+        COALESCE(m.tx_count,0) AS tx_count,
+        COALESCE(m.gross_volume,0) AS gross_volume
+ FROM core.accounts a LEFT JOIN movement m USING (account_id)
+ WHERE a.is_active
 )
+SELECT c.first_name, c.last_name, am.account_number, am.currency,
+       am.tx_count, am.gross_volume,
+       CASE WHEN am.tx_count = 0 THEN 'SIN MOVIMIENTOS' ELSE 'CON MOVIMIENTOS' END AS activity_band
+FROM account_metrics am JOIN core.customers c USING (customer_id)
+ORDER BY am.account_number;
+SELECT (SELECT COUNT(*) FROM core.accounts WHERE is_active) AS active_accounts,
+       (SELECT COALESCE(SUM(amount),0) FROM core.transactions) AS direct_gross_volume;
 
--- 3. Enriquecimiento con customers, cálculo de banda de actividad y ordenamiento por account_number
-SELECT 
-    ca.account_number,
-    cu.first_name || ' ' || cu.last_name AS titular,
-    ca.currency,
-    ca.recuento,
-    ca.volumen_bruto AS volumen,
-    CASE 
-        WHEN ca.volumen_bruto = 0 THEN 'Sin Actividad'
-        WHEN ca.volumen_bruto < 200 THEN 'Baja'
-        WHEN ca.volumen_bruto < 500 THEN 'Media'
-        ELSE 'Alta'
-    END AS banda_de_actividad
-FROM cuentas_activas ca
-JOIN core.customers cu ON ca.customer_id = cu.customer_id[cite: 1]
-ORDER BY ca.account_number;
-
-
--- =========================================================================
--- 4. CONSULTAS DE CONTRASTE DIRECTO
--- =========================================================================
-
--- Contraste del recuento total de cuentas activas
-SELECT COUNT(*) AS total_cuentas_activas 
-FROM core.accounts 
-WHERE is_active = true;[cite: 1]
-
--- Contraste del volumen total de transacciones registradas
-SELECT SUM(amount) AS volumen_total_transacciones 
-FROM core.transactions;[cite: 1]
