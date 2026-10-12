@@ -6,11 +6,11 @@
 - fecha_nacimiento            - saldo_actual
 - tax_id                      - limite_credito
 
-                   (Cuenta Origen)                             (Cuenta Destino) 
-[Cuentas] 1 ------------------------- N [Transacciones] N------------------------- 1[Cuentas] 1 
-                                     - transaccion_id (PK)
-                                     - from_account (FK -> Cuentas)
-                                     - to_account (FK -> Cuentas)
-                                     - monto
-                                     - tipo_transaccion
-                                     - fecha_completada
+                   (Cuenta Origen)
+[Cuentas] 1 ------------------------- N [Transacciones]
+                                          - transaccion_id (PK)
+                   (Cuenta Destino)       - from_account (FK -> Cuentas)
+[Cuentas] 1 ------------------------- N   - to_account (FK -> Cuentas)
+                                          - monto
+                                          - tipo_transaccion
+                                          - fecha_completada
