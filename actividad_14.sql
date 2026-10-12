@@ -1,66 +1,14 @@
-SELECT 
-    t1.transaction_id AS tx_id_1,
-    t2.transaction_id AS tx_id_2,
-    t1.account_id,
-    t1.tx_timestamp AS timestamp_1,
-    t2.tx_timestamp AS timestamp_2
-FROM core.transactions t1
-JOIN core.transactions t2 
-    ON t1.account_id = t2.account_id
-    AND t1.transaction_id < t2.transaction_id;
+SELECT t1.account_id, t1.transaction_id AS earlier_id, t2.transaction_id AS later_id
+FROM core.transactions t1 JOIN core.transactions t2
+ ON t1.account_id = t2.account_id
+ AND (t1.tx_timestamp,t1.transaction_id) < (t2.tx_timestamp,t2.transaction_id)
+ AND t2.tx_timestamp <= t1.tx_timestamp + INTERVAL '48 hours'
+ORDER BY t1.account_id, t1.tx_timestamp;
 
-WITH tipos_cuenta AS (
-    SELECT unnest(enum_range(NULL::core.tipo_cuenta)) AS account_type
+WITH types AS (
+ SELECT unnest(enum_range(NULL::core.tipo_cuenta)) AS account_type
 )
-SELECT 
-    c.customer_id,
-    c.first_name,
-    c.last_name,
-    t.account_type
-FROM core.customers c
-CROSS JOIN tipos_cuenta t;
-
-WITH tipos_cuenta AS (
-    SELECT unnest(enum_range(NULL::core.tipo_cuenta)) AS account_type
-),
-matriz_posible AS (
-    SELECT 
-        c.customer_id,
-        c.first_name,
-        c.last_name,
-        t.account_type
-    FROM core.customers c
-    CROSS JOIN tipos_cuenta t
-)
-SELECT 
-    m.customer_id,
-    m.first_name,
-    m.last_name,
-    m.account_type
-FROM matriz_posible m
-WHERE NOT EXISTS (
-    SELECT 1 
-    FROM core.accounts a 
-    WHERE a.customer_id = m.customer_id 
-      AND a.account_type = m.account_type
-);
-
-SELECT 
-    c.first_name, 
-    c.last_name, 
-    a.account_number, 
-    a.account_type 
-FROM core.customers c
-JOIN core.accounts a USING (customer_id)
-WHERE c.customer_id = '11111111-1111-1111-1111-111111111111';
-
--- Comprobación directa de un caso ausente (Ej. Tipo CREDIT para John Doe)
-SELECT 
-    'John Doe' AS cliente, 
-    'CREDIT' AS tipo_cuenta_ausente
-WHERE NOT EXISTS (
-    SELECT 1 
-    FROM core.accounts a
-    WHERE a.customer_id = '11111111-1111-1111-1111-111111111111'
-      AND a.account_type = 'CREDIT'::core.tipo_cuenta
-);
+SELECT c.customer_id, c.email, ty.account_type
+FROM core.customers c CROSS JOIN types ty
+LEFT JOIN core.accounts a ON a.customer_id = c.customer_id AND a.account_type = ty.account_type
+WHERE a.account_id IS NULL ORDER BY c.email, ty.account_type;
