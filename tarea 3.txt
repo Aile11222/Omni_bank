@@ -1,0 +1,10 @@
+ 1-teoria de la perspectiva:
+ tiene la razón desde una perspectiva puramente académica y teórica de normalización. En una base de datos en 3NF estricta y absoluta
+ no se deberían almacenar valores derivados que puedan calcularse a partir de otros campos transaccionales (como sería un SUM(monto))
+
+ 2-el problema del rendimiento:
+Colapso del CPU e I/O de disco: Escanear e indexar 250,000 filas por consulta masiva (incluso en memoria con Índices) 
+Incapacidad de bloqueo rápido para salvedades concurrentes: Al transferir dinero es imperativo verificar inmediatamente en microsegundos que saldo_actual >= monto_a_retirar
+Solución y Mitigación Empresarial: Mantenemos saldo_actual como una desnormalización controlada. Para evitar que este saldo se desajuste en relación
+con las filas reales de Transacciones, delegamos al motor PostgreSQL la exigencia estricta de actualizar 
+el saldo única y exclusivamente mediante Procedimientos Almacenados atómicos o Triggers transaccionales
