@@ -1,39 +1,20 @@
-SELECT 
-    t.transaction_id,
-    t.account_id,
-    t.tx_type,
-    t.amount,
-    (SELECT AVG(t2.amount) 
-     FROM core.transactions t2 
-     WHERE t2.account_id = t.account_id) AS avg_account_amount
-FROM core.transactions t;
+SELECT t_ext.transaction_id,t_ext.account_id,t_ext.amount,
+       (SELECT ROUND(AVG(t_int.amount),2)
+        FROM core.transactions t_int
+        WHERE t_int.account_id=t_ext.account_id) AS account_average
+FROM core.transactions t_ext
+WHERE t_ext.amount>(
+  SELECT AVG(t_int.amount)
+  FROM core.transactions t_int
+  WHERE t_int.account_id=t_ext.account_id
+)
+ORDER BY t_ext.amount DESC;
+SELECT account_id,ROUND(AVG(amount),2) AS account_average
+FROM core.transactions GROUP BY account_id ORDER BY account_id;
 
-SELECT 
-    t.transaction_id,
-    t.account_id,
-    t.tx_type,
-    t.amount,
-    (SELECT AVG(t2.amount) 
-     FROM core.transactions t2 
-     WHERE t2.account_id = t.account_id) AS avg_account_amount
-FROM core.transactions t
-WHERE t.amount > (
-    SELECT AVG(t2.amount) 
-    FROM core.transactions t2 
-    WHERE t2.account_id = t.account_id
-);
-
-SELECT 
-    a.account_number, 
-    a.is_active
+SELECT a.account_number,a.is_active,a.balance
 FROM core.accounts a
 WHERE NOT EXISTS (
-    SELECT 1 
-    FROM core.transactions t 
-    WHERE t.account_id = a.account_id
-);
-
---Al no existir registros asociados en la tabla core.transactions (como ocurre con las cuentas ACCT-3002 o ACCT-1002), 
---la función de agregación AVG() no procesa ningún valor numérico
---El filtro con NOT EXISTS opera directamente sobre la existencia de tuplas en la tabla core.accounts, 
---evaluando la carencia de actividad sin depender de que exista un promedio calculado.
+  SELECT 1 FROM core.transactions t WHERE t.account_id=a.account_id
+)
+ORDER BY a.account_number;
