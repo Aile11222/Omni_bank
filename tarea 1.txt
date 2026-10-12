@@ -1,7 +1,3 @@
-Reference Solution
 NFR1 (Consistencia Matemática): La base de datos debe impedir que las cuentas queden con saldos en números negativos.
 NFR2 (Auditoría / Soft Delete): La base de datos debe impedir la eliminación física de un registro de cliente, y en su lugar debe poder marcarse como inactivo.
 NFR3 (Timestamps): La base de datos debe registrar y actualizar automáticamente la fecha y hora exacta (updated_at) cada vez que el registro de una cuenta es modificado.
-Common Valid Variations
-"La tabla de clientes debe tener un campo booleano 'is_active'." 
-los clientes, el tax id y el correo electronico debem ser unicos
