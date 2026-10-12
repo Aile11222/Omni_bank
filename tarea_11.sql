@@ -1,22 +1,19 @@
-SELECT 
-    COUNT(*) AS cuentas_totales,
-    COUNT(*) FILTER (WHERE NOT is_active) AS cuentas_desactivadas,
-    ROUND(
-        (COUNT(*) FILTER (WHERE NOT is_active)::NUMERIC / COUNT(*)::NUMERIC) * 100, 
-        2
-    ) as porcentaje_desactivadas
+SELECT COUNT(*) AS total_accounts,
+       COUNT(*) FILTER (WHERE NOT is_active) AS inactive_accounts,
+       ROUND(100.0*COUNT(*) FILTER (WHERE NOT is_active)::numeric
+             /NULLIF(COUNT(*),0),2) AS inactive_pct
 FROM core.accounts;
 
-SELECT 
-    transaction_id,
-    tx_timestamp,
-    TIMESTAMP '2026-10-01 00:00+00' AS fecha_revision,
-    AGE(TIMESTAMP '2026-10-01 00:00+00', tx_timestamp) AS antiguedad_evento
-FROM core.transactions
-WHERE tx_timestamp >= TIMESTAMP '2026-10-01 00:00+00' - INTERVAL '15 days'
-  AND tx_timestamp <= TIMESTAMP '2026-10-01 00:00+00'
-ORDER BY tx_timestamp ASC, transaction_id ASC;
+SELECT CONCAT(UPPER(TRIM(c.first_name)),' ',UPPER(TRIM(c.last_name))) AS customer_name,
+       CONCAT('XXXX-',RIGHT(a.account_number,4)) AS masked_account,
+       t.transaction_id,t.tx_timestamp,
+       t.tx_timestamp + INTERVAL '15 days' AS review_on,
+       AGE(TIMESTAMPTZ '2026-10-01 00:00+00',t.tx_timestamp) AS age_at_review
+FROM core.transactions t
+JOIN core.accounts a ON a.account_id=t.account_id
+JOIN core.customers c ON c.customer_id=a.customer_id
+WHERE t.tx_timestamp<TIMESTAMPTZ '2026-09-10 00:00+00'
+ORDER BY t.tx_timestamp;
 
---El cálculo de la antigüedad utiliza un corte explícito y estático (2026-10-01 00:00+00) en lugar de funciones dinámicas como CURRENT_TIMESTAMP o NOW().
---Del mismo modo, los datos de las transacciones (tx_timestamp) y los estados de las cuentas (is_active) son marcas de tiempo históricas almacenadas de forma fija 
---en la base de datos
+--La división entera 1/5 trunca a cero. El literal 100.0 y el cast NUMERIC conservan la fracción. 
+--El intervalo respeta la aritmética temporal de PostgreSQL; la fecha fija hace repetible la revisión.
