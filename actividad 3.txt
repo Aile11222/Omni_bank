@@ -1,0 +1,28 @@
+para la tabla 1NF se debe Desarmar cliente_nombre_y_contacto en columnas individuales: nombre, email, telefono.
+y tambien Desarmar moneda_y_tipo en: moneda y tipo_cuenta.
+
+y para el 3NF se dividiria de la siguiente manera
+
+[Sucursales] (3NF - Elimina redundancia transitiva de direcciones repetidas en cada venta)
+- sucursal_id (PK)      
+- direccion             
+
+[Clientes] (3NF - Elimina duplicidad masiva del cliente en cada transacción o cuenta)
+- cliente_id (PK/TaxID) 
+- nombre                
+- email                
+- telefono              
+
+[Cuentas] (3NF - Dependencia directa de Cuenta a Cliente y Sucursal de apertura)
+- cuenta_numero (PK)    
+- cliente_id (FK -> Clientes)
+- sucursal_id (FK -> Sucursales)
+- moneda                
+- tipo_cuenta           
+- saldo_actual          
+
+[Transacciones] (3NF - Registro atómico exclusivo del evento financiero)
+- transaccion_id (PK)   
+- cuenta_numero (FK -> Cuentas)
+- fecha_tx
+- monto_tx
